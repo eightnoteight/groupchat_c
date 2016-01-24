@@ -1,4 +1,4 @@
 all:
-	mkdir -p build
-	gcc server.c -std=c11 -o build/server
-	gcc client.c -std=c11 -o build/client
+	mkdir -p c__build__c
+	gcc server.c -std=c11 -o c__build__c/server
+	gcc client.c -std=c11 -o c__build__c/client
