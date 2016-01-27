@@ -7,6 +7,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <netdb.h>
 #include <sys/time.h>
 #include <ifaddrs.h>
 
@@ -17,16 +18,26 @@
 
 void p_listening_on(int lport) {
     struct ifaddrs *ifap, *tptr;
+    char host[NI_MAXHOST];
+    int family, s;
     if (getifaddrs(&ifap) != 0) {
         perror("getting available interfaces failed");
         exit(EXIT_FAILURE);
     }
     tptr = ifap;
-    while (tptr != NULL) {
-        printf("listening on %s %d\n",
-            (char*)(inet_ntoa(((struct sockaddr_in*)(tptr->ifa_addr))->sin_addr)),
-            lport);
-        tptr = tptr->ifa_next;
+    for (tptr = ifap; tptr != NULL; tptr = tptr->ifa_next) {
+        if (tptr->ifa_addr == NULL)
+            continue;
+        family = tptr->ifa_addr->sa_family;
+        if (family == AF_INET) {
+            if ((s = getnameinfo(
+                    tptr->ifa_addr, sizeof(struct sockaddr_in),
+                    host, NI_MAXHOST, NULL, 0, NI_NUMERICHOST)) != 0) {
+                printf("getnameinfo() failed: %s\n", gai_strerror(s));
+                exit(EXIT_FAILURE);
+            }
+            printf("listening on %s %d\n", host, lport);
+        }
     }
     freeifaddrs(ifap);
 }
