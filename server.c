@@ -8,23 +8,40 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <sys/time.h>
+#include <ifaddrs.h>
 
 #define TRUE                                1
 #define FALSE                               0
 #define PORT                                0
 #define MAX                                 30
 
-int main(int argc , char *argv[])
-{
+void p_listening_on(int lport) {
+    struct ifaddrs *ifap, *tptr;
+    if (getifaddrs(&ifap) != 0) {
+        perror("getting available interfaces failed");
+        exit(EXIT_FAILURE);
+    }
+    tptr = ifap;
+    while (tptr != NULL) {
+        printf("listening on %s %d\n",
+            (char*)(inet_ntoa(((struct sockaddr_in*)(tptr->ifa_addr))->sin_addr)),
+            lport);
+        tptr = tptr->ifa_next;
+    }
+    freeifaddrs(ifap);
+}
+
+int main(int argc , char *argv[]) {
     int opt = TRUE;
     int ss, addrlen, ns, cs[MAX], activity, i, val, sd, new_socket, j;
     int max_fds;
     struct sockaddr_in address;
 
+
     char buffer[MAX][1025];
     char client_id_buf[2055];
     fd_set readfds;
-    char *message ="Welcome Clients.\n";
+    char *message ="server: welcome clients.\n";
     memset(cs, 0, MAX*sizeof(cs[0]));
     if((ss = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
         perror("socket failed");
@@ -52,9 +69,7 @@ int main(int argc , char *argv[])
     if (getsockname(ss, (struct sockaddr*)&address, &tmp_len) == -1) {
         perror("getsockname");
     }
-    else {
-        printf("Listener on port %d \n", ntohs(address.sin_port));
-    }
+    p_listening_on(ntohs(address.sin_port));
 
 
     addrlen = sizeof(address);
